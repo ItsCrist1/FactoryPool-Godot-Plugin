@@ -4,7 +4,7 @@ using Godot;
 
 public class FactoryPool<T> : IDisposable
 where T : Node2D {
-    FactoryPoolConfig Config;
+    public FactoryPoolConfig Config { get; set; }
     Stack<T> Pool;
 
     public FastEvent<int> OnExpand, OnExtract;
@@ -30,7 +30,7 @@ where T : Node2D {
 		OnExpand.Invoke(amount);
     }
 	
-	public List<T> ExtractPools(int amount=1) {
+	public List<T> ExtractPool(int amount=1) {
 		if(Pool.Count < Math.Max(amount,Config.MinPoolToExpand))
 		    ExpandPool(amount - Pool.Count + Config.PerExpandBatch);
 		
@@ -55,6 +55,7 @@ where T : Node2D {
     public void Dispose() {
         while(Pool.Count > 0)
 		    Pool.Pop().QueueFree();
+		
         Pool = null;
 
         OnExpand.Clear();
