@@ -3,75 +3,71 @@ using System.Collections.Generic;
 using Godot;
 
 public class FactoryPool<T> : IDisposable
-where T : Node {
+where T : Node2D {
     FactoryPoolConfig Config;
-    Stack<T> pool;
-    Timer timer;
+    Stack<T> Pool;
 
-    public FastEvent OnExpand, OnExtract;
+    public FastEvent<int> OnExpand, OnExtract;
 
-    public FactoryPool(FactoryPoolConfig Config=null) {
-        Config ??= new();
+    public FactoryPool(FactoryPoolConfig Config) {
         this.Config = Config;
 
         OnExpand = new();
         OnExtract = new();
 
-        pool = new();
+        Pool = new();
         ExpandPool(Config.WarmupExpansionSize);
-
-        timer = TimerManager.CreateLooping(new() {
-            AutoStart = true,
-            TickRate = Config.AddRate,
-            TickFrequency = Config.AddFrequency
-        });
-
-        timer.OnTick += () => ExpandPool(Config.PerExpandBatch);
     }
 
     void ExpandPool(int amount=1) {
-        if(pool.Count >= Config.MaxExpansionPoolSize) {
-            timer.Pause();
-            return;
-        }
-
-        int toAdd = Mathf.Min(amount, Config.MaxExpansionPoolSize - pool.Count);
-
-        for(int i=0; i < toAdd; ++i) {
-            pool.Push(Config.Object.Instantiate() as T);
-            OnExpand.Invoke();
-        }
+        for(int i=0; i < amount; ++i) {
+            Pool.Push(ToggleNode(
+				(T)Config.Object.Instantiate(), 
+				false
+			));
+		}
+		
+		OnExpand.Invoke(amount);
     }
+	
+	public List<T> ExtractPools(int amount=1) {
+		if(Pool.Count < Math.Max(amount,Config.MinPoolToExpand))
+		    ExpandPool(amount - Pool.Count + Config.PerExpandBatch);
+		
+		List<T> list = new(amount);
+		for(int i=0; i < amount; ++i)
+		    list.Add(ToggleNode(
+				Pool.Pop(), 
+				true
+			));
+			
+		OnExtract.Invoke(amount);
+			
+		return list;
+	}
 
-    public T ExtractPool() {
-        if(pool.Count == 0)
-            ExpandPool();
-
-        timer.Resume();
-
-        OnExtract.Invoke();
-        return pool.Pop();
-    }
-
-    public void ContributePool(T node) {
-        if(pool.Count >= Config.MaxPoolSize) {
-            node.QueueFree();
-            return;
-        }
-
-        pool.Push(node);
-    }
+    public void ContributePool(T node)
+        => Pool.Push(ToggleNode(
+			node, 
+			false
+		));
 
     public void Dispose() {
-        for(; pool.Count > 0; pool.Pop().QueueFree());
-        pool = null;
-        
-        timer.Dispose();
-        timer = null;
+        while(Pool.Count > 0)
+		    Pool.Pop().QueueFree();
+        Pool = null;
 
         OnExpand.Clear();
         OnExtract.Clear();
 
         GC.SuppressFinalize(this);
     }
+	
+	T ToggleNode(T node, bool b) {
+		node.ProcessMode = b ? Node.ProcessModeEnum.Inherit 
+						     : Node.ProcessModeEnum.Disabled;
+		node.Visible = b;
+		
+		return node;
+	}
 }
