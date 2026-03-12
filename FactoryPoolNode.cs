@@ -1,21 +1,22 @@
+using System;
 using System.Collections.Generic;
 
 using Godot;
 
-public partial class FactoryPoolNode<T> : Node
-where T : Node2D {
+[GlobalClass]
+public partial class FactoryPoolNode : Node  {
 	[Export] FactoryPoolConfig Config;
 	
 	[Signal] public delegate void OnExpandEventHandler(int amount);
 	[Signal] public delegate void OnExtractEventHandler(int amount);
 	
-	FactoryPool<T> Pool;
+	FactoryPool Pool;
 	
 	public override void _EnterTree() {
-		Pool = new(Config);
+		Pool = new(Config, this);
 		
-		Pool.OnExpand += OnExpand;
-		Pool.OnExtract += OnExtract;
+		Pool.OnExpand += _OnExpand;
+		Pool.OnExtract += _OnExtract;
 	}
 	
 	public override void _ExitTree() {
@@ -23,15 +24,18 @@ where T : Node2D {
 		Pool = null;
 	}
 	
-	public List<T> ExtractPool(int amount=1)
-	    => Pool.ExtractPool(amount);
-		
-	public void ContributePool(T node)
-	    => Pool.ContributePool(node);
+	public Node ExtractObject()
+	    => Pool.ExtractObject();
 	
-	void OnExpand(int amount) 
+	public List<Node> ExtractObjects(int amount=1)
+	    => Pool.ExtractObjects(amount);
+		
+	public void ContributeObject(Node node)
+	    => Pool.ContributeObject(node);
+	
+	void _OnExpand(int amount) 
 	    => EmitSignal(SignalName.OnExpand, amount);
 		
-	void OnExtract(int amount) 
+	void _OnExtract(int amount) 
 	    => EmitSignal(SignalName.OnExtract, amount);
 }

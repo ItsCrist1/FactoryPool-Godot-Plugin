@@ -2,55 +2,70 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-public class FactoryPool<T> : IDisposable
-where T : Node2D {
+public class FactoryPool : IDisposable {
     public FactoryPoolConfig Config { get; set; }
-    Stack<T> Pool;
+    Stack<Node> Pool;
+	HashSet<Node> potentialOrphans;
+	Node Parent;
 
     public FastEvent<int> OnExpand, OnExtract;
 
-    public FactoryPool(FactoryPoolConfig Config) {
+    public FactoryPool(FactoryPoolConfig Config, Node Parent) {
         this.Config = Config;
+		this.Parent = Parent;
 
         OnExpand = new();
         OnExtract = new();
 
         Pool = new();
         ExpandPool(Config.WarmupExpansionSize);
+		
+		potentialOrphans = new();
     }
 
     void ExpandPool(int amount=1) {
         for(int i=0; i < amount; ++i) {
-            Pool.Push(ToggleNode(
-				(T)Config.Object.Instantiate(), 
-				false
-			));
+            Node node = ToggleNode(Config.Object.Instantiate(),false);
+			Pool.Push(node);
+			Parent.AddChild(node);
 		}
 		
 		OnExpand.Invoke(amount);
     }
 	
-	public List<T> ExtractPool(int amount=1) {
+	public Node ExtractObject() {
+		if(Pool.Count < Config.MinPoolToExpand)
+		    ExpandPool(Config.PerExpandBatch);
+			
+		OnExtract.Invoke(1);
+		
+		
+		Node node = ToggleNode(Pool.Pop(), true);
+		potentialOrphans.Add(node);
+		return node;
+	}
+	
+	public List<Node> ExtractObjects(int amount=1) {
 		if(Pool.Count < Math.Max(amount,Config.MinPoolToExpand))
 		    ExpandPool(amount - Pool.Count + Config.PerExpandBatch);
 		
-		List<T> list = new(amount);
-		for(int i=0; i < amount; ++i)
-		    list.Add(ToggleNode(
-				Pool.Pop(), 
-				true
-			));
+		List<Node> list = new(amount);
+		for(int i=0; i < amount; ++i) {
+			Node node = ToggleNode(Pool.Pop(), true);
+			potentialOrphans.Add(node);
+			list.Add(node);
+		}
 			
 		OnExtract.Invoke(amount);
 			
 		return list;
 	}
 
-    public void ContributePool(T node)
-        => Pool.Push(ToggleNode(
-			node, 
-			false
-		));
+    public void ContributeObject(Node node) {
+	    Node cnode = ToggleNode(node, false);
+		potentialOrphans.Remove(cnode);
+		Pool.Push(cnode);
+	}
 
     public void Dispose() {
         while(Pool.Count > 0)
@@ -60,14 +75,28 @@ where T : Node2D {
 
         OnExpand.Clear();
         OnExtract.Clear();
+		
+		foreach(Node actualOrphan in potentialOrphans)
+			if(GodotObject.IsInstanceValid(actualOrphan))
+				// quietly murder the orphan
+			    // what will they do, tell `Parent`?
+			    actualOrphan.QueueFree();
 
         GC.SuppressFinalize(this);
     }
 	
-	T ToggleNode(T node, bool b) {
+	Node ToggleNode(Node node, bool b) {
 		node.ProcessMode = b ? Node.ProcessModeEnum.Inherit 
 						     : Node.ProcessModeEnum.Disabled;
-		node.Visible = b;
+		
+		if(node is Node2D node2D)
+		    node2D.Visible = b;
+		
+		if(node is Node3D node3D)
+		    node3D.Visible = b;
+			
+		if(node is Control nodeControl)
+		    nodeControl.Visible = b;
 		
 		return node;
 	}
