@@ -67,6 +67,11 @@ public class FactoryPool : IDisposable {
 		Pool.Push(cnode);
 	}
 
+	public void FreeObject(Node node) {
+		potentialOrphans.Remove(node);
+		node.QueueFree();
+	}
+
     public void Dispose() {
         while(Pool.Count > 0)
 		    Pool.Pop().QueueFree();

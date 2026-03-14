@@ -32,6 +32,9 @@ public partial class FactoryPoolNode : Node  {
 		
 	public void ContributeObject(Node node)
 	    => Pool.ContributeObject(node);
+
+	public void FreeObject(Node node)
+	    => Pool.FreeObject(node);
 	
 	void _OnExpand(int amount) 
 	    => EmitSignal(SignalName.OnExpand, amount);

@@ -28,6 +28,9 @@ public partial class FactoryPoolManager : Node {
 	public void ContributeObject(Node node)
 	    => Pools[node.GetType()].ContributeObject(node);
 
+	public void FreeObject(Node node)
+	    => Pools[node.GetType()].FreeObject(node);
+
 	public void ResetPool<T>(FactoryPoolConfig Config) {
 		Pools[typeof(T)].Dispose();
 		Pools[typeof(T)] = new(Config, this);
