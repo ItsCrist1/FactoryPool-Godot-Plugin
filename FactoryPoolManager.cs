@@ -19,17 +19,29 @@ public partial class FactoryPoolManager : Node {
 		    Pools[config.ObjectType] = new(config, this);
 	}
 	
-	public T ExtractObject<T>() where T : Node
-	    => (T)Pools[typeof(T)].ExtractObject();
+	public T ExtractObject<T>() where T : Node, IPoolable {
+		T t = (T)Pools[typeof(T)].ExtractObject();
+		t.OnSpawn();
+		return t;
+	}
 	
-	public IEnumerable<T> ExtractObjects<T>(int amount=1) where T : Node
-	    => Pools[typeof(T)].ExtractObjects(amount).Cast<T>();
+	public IEnumerable<T> ExtractObjects<T>(int amount=1) where T : Node, IPoolable {
+		IEnumerable<T> ts = Pools[typeof(T)].ExtractObjects(amount).Cast<T>();
+		foreach(T t in ts)
+			t.OnSpawn();
 		
-	public void ContributeObject(Node node)
-	    => Pools[node.GetType()].ContributeObject(node);
+		return ts;
+	}
+		
+	public void ContributeObject<T>(T node) where T : Node, IPoolable {
+		node.OnDespawn();
+		Pools[node.GetType()].ContributeObject(node);
+	}
 
-	public void FreeObject(Node node)
-	    => Pools[node.GetType()].FreeObject(node);
+	public void FreeObject<T>(T node) where T : Node, IPoolable {
+		node.OnDespawn();
+		Pools[node.GetType()].FreeObject(node);
+	}
 
 	public void ResetPool<T>(FactoryPoolConfig Config) {
 		Pools[typeof(T)].Dispose();
