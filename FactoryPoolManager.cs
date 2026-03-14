@@ -25,8 +25,8 @@ public partial class FactoryPoolManager : Node {
 	public IEnumerable<T> ExtractObjects<T>(int amount=1) where T : Node
 	    => Pools[typeof(T)].ExtractObjects(amount).Cast<T>();
 		
-	public void ContributeObject<T>(Node node)
-	    => Pools[typeof(T)].ContributeObject(node);
+	public void ContributeObject(Node node)
+	    => Pools[node.GetType()].ContributeObject(node);
 
 	public void ResetPool<T>(FactoryPoolConfig Config) {
 		Pools[typeof(T)].Dispose();
