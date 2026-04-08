@@ -1,20 +1,14 @@
 [gd_scene format=3 uid="uid://d1n1rile5tn4f"]
 
 [ext_resource type="Script" uid="uid://btgfvwiwjj0aw" path="res://addons/FactoryPool-Godot-Plugin/FactoryPoolManager.cs" id="1_ycvdq"]
-[ext_resource type="PackedScene" uid="uid://dvimwr6ychedo" path="res://scenes/anti_puss_projectile.tscn" id="2_5tyyq"]
-[ext_resource type="Script" uid="uid://bm3xpdjo8ubyg" path="res://addons/FactoryPool-Godot-Plugin/FactoryPoolConfig.cs" id="3_qpbh6"]
-[ext_resource type="PackedScene" uid="uid://bxn0ohx3xuf0b" path="res://scenes/shell_bug_projectile.tscn" id="4_64da1"]
+[ext_resource type="PackedScene" uid="uid://dss6my70eicu8" path="res://scenes/soldier-projectile.tscn" id="2_qsacx"]
+[ext_resource type="Script" uid="uid://bm3xpdjo8ubyg" path="res://addons/FactoryPool-Godot-Plugin/FactoryPoolConfig.cs" id="3_64da1"]
 
-[sub_resource type="Resource" id="Resource_8061x"]
-script = ExtResource("3_qpbh6")
-Object = ExtResource("2_5tyyq")
-metadata/_custom_type_script = "uid://bm3xpdjo8ubyg"
-
-[sub_resource type="Resource" id="Resource_64da1"]
-script = ExtResource("3_qpbh6")
-Object = ExtResource("4_64da1")
+[sub_resource type="Resource" id="Resource_61jx8"]
+script = ExtResource("3_64da1")
+Object = ExtResource("2_qsacx")
 metadata/_custom_type_script = "uid://bm3xpdjo8ubyg"
 
 [node name="FactoryPoolManager" type="Node" unique_id=1253408396]
 script = ExtResource("1_ycvdq")
-Configs = Array[Resource]([SubResource("Resource_8061x"), SubResource("Resource_64da1")])
+Configs = Array[Resource]([SubResource("Resource_61jx8")])
